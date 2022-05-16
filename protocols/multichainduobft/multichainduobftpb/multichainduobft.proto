@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package multichainduobftpb;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/ibalajiarun/go-consensus/protocols/multichainduobft/multichainduobftpb";
+
+message ChainID {
+    uint64 peer_id = 1 [(gogoproto.customname) = "PeerID", 
+                        (gogoproto.casttype) = "github.com/ibalajiarun/go-consensus/peer/peerpb.PeerID"];
+    uint32 peer_seq = 2;
+}

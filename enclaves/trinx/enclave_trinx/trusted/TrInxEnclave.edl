@@ -1,0 +1,54 @@
+/* Enclave.edl - Top EDL file. */
+
+enclave {
+
+    trusted {
+        public void ecall_trinx_init([in, count = 1024] const char* key,
+                                     uint32_t key_len,
+                                     uint32_t num_counters,
+                                     uint32_t vec_len);
+
+        public uint32_t ecall_trinx_create_independent_counter_certificate(
+                uint32_t ctr_id,
+                uint64_t new_value, 
+    			[in, size=msg_size] const uint8_t* msg, uint32_t msg_size,
+    			[out, size=cert_size] uint8_t* cert, uint32_t cert_size);
+
+        public uint32_t ecall_trinx_create_independent_counter_certificate_vector(
+                uint32_t ctr_id,
+                uint64_t new_value, 
+    			[in, size=msg_size] const uint8_t* msg, uint32_t msg_size,
+    			[out, size=cert_size] uint8_t* cert, uint32_t cert_size);
+
+        public uint32_t ecall_trinx_create_continuing_counter_certificate(
+                uint32_t ctr_id,
+                uint64_t new_value, 
+    			[in, size=msg_size] const uint8_t* msg, uint32_t msg_size,
+    			[out, size=cert_size] uint8_t* cert, uint32_t cert_size);
+
+        public uint32_t ecall_trinx_verify_independent_counter_certificate(
+                uint32_t ctr_id,
+                uint64_t value,
+    			[in, size=msg_size] const uint8_t* msg, uint32_t msg_size,
+    			[in, size=cert_size] const uint8_t* cert, uint32_t cert_size, 
+                [out, size=1] uint8_t* identical);
+
+        public uint32_t ecall_trinx_verify_continuing_counter_certificate(
+                uint32_t ctr_id,
+                uint64_t old_value, uint64_t new_value, 
+    			[in, size=msg_size] const uint8_t* msg, uint32_t msg_size,
+    			[in, size=cert_size] const uint8_t* cert, uint32_t cert_size, 
+                [out, size=1] uint8_t* identical);
+    			
+    };
+
+    /* 
+     * ocall_print_string - invokes OCALL to display string buffer inside the enclave.
+     *  [in]: copy the string buffer to App outside.
+     *  [string]: specifies 'str' is a NULL terminated buffer.
+     */
+    untrusted {
+        void ocall_print_string([in, string] const char *str);
+    };
+
+};

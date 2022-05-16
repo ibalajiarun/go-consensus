@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package rccpb;
+
+import "gogoproto/gogo.proto";
+import "peer/peerpb/peer.proto";
+
+option go_package = "github.com/ibalajiarun/go-consensus/protocols/rcc/rccpb";
+
+message RCCMessage {
+    peerpb.Message message = 1 [(gogoproto.nullable) = false];
+    enum Kind {
+        None = 0;
+        Orderer = 1;
+        Replicator = 2;
+    }
+    Kind kind = 2;
+    uint64 replica_id   = 3 [(gogoproto.customname) = "PeerID",
+                            (gogoproto.casttype) = "github.com/ibalajiarun/go-consensus/peer/peerpb.PeerID"];
+}

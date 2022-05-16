@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+package sbftslowpb;
+
+import "gogoproto/gogo.proto";
+import "pkg/command/commandpb/command.proto";
+
+option go_package = "github.com/ibalajiarun/go-consensus/protocols/sbftslow/sbftslowpb";
+
+message SBFTMessage {
+    oneof type {
+        NormalMessage normal = 1;
+        ResultMessage result = 2;
+    }
+}
+
+message InstanceState {
+    uint64 view = 1 [(gogoproto.casttype) = "View"];
+
+    uint64 index = 2 [(gogoproto.casttype) = "Index"];
+
+    enum Status {
+        None = 0;
+        Preprepared = 1;
+        SignShared = 2;
+        Prepared = 3;
+        CommitSigShared = 4;
+        Committed = 5;
+        StateShared = 6;
+        Executed = 7;
+    }
+    Status status = 3;
+
+    commandpb.Command command = 4;
+    bytes command_hash = 5;
+}
+
+message NormalMessage {
+    uint64 view = 1 [(gogoproto.casttype) = "View"];
+
+    uint64 index = 2 [(gogoproto.casttype) = "Index"];
+
+    enum Type {
+        None = 0;
+        Preprepare = 1;
+        SignShare = 2;
+        Prepare = 3;
+        CommitSig = 4;
+        CommitSlow = 5;
+        StateShare = 6;
+        ExecProof = 7;
+    }
+    Type type = 3;
+
+    commandpb.Command command = 4;
+    bytes command_hash = 5;
+}
+
+message ResultMessage {
+    bytes  result = 1;
+    uint64 id = 2;
+}

@@ -1,0 +1,68 @@
+syntax = "proto3";
+
+package chainduobftpb;
+
+import "gogoproto/gogo.proto";
+import "pkg/command/commandpb/command.proto";
+
+option go_package = "github.com/ibalajiarun/go-consensus/protocols/multichainduobft/chainduobft/chainduobftpb";
+
+option (gogoproto.goproto_stringer_all) = false;
+option (gogoproto.stringer_all) =  true;
+
+message Signature {
+    option (gogoproto.stringer) =  false;
+    bytes sig = 1;
+    uint64 signer = 2 [(gogoproto.casttype) = "github.com/ibalajiarun/go-consensus/peer/peerpb.PeerID"];
+    uint64 counter = 3;
+}
+
+message QuorumCert {
+    option (gogoproto.stable_marshaler) = true;
+    option (gogoproto.stringer) =  false;
+    map<uint64, Signature> sigs = 1 [(gogoproto.castkey) = "github.com/ibalajiarun/go-consensus/peer/peerpb.PeerID"];
+    bytes block_hash = 2 [(gogoproto.casttype) = "BlockHashSlice"];
+    uint64 height = 3 [(gogoproto.casttype) = "Height"];
+}
+
+message SlowChainState {
+    option (gogoproto.stringer) =  false;
+    bytes propose_block_hash = 1  [(gogoproto.casttype) = "BlockHashSlice"];
+    uint64 propose_block_height = 6 [(gogoproto.casttype) = "Height"];
+    uint64 height = 2 [(gogoproto.casttype) = "Height"];
+    bytes parent = 3 [(gogoproto.casttype) = "BlockHashSlice"];
+    QuorumCert q_c = 4;
+    bool self_propose = 5;
+}
+
+message FastChainState {
+    option (gogoproto.stringer) =  false;
+    commandpb.Command command = 1;
+    uint64 height = 2 [(gogoproto.casttype) = "Height"];
+    bytes parent = 3 [(gogoproto.casttype) = "BlockHashSlice"];
+    QuorumCert q_c = 4;
+}
+
+message BlockState {
+    option (gogoproto.stringer) =  false;
+    uint64 view = 1 [(gogoproto.casttype) = "View"];
+    FastChainState fast_state = 2;
+    SlowChainState slow_state = 3;
+}
+
+message ProposeMessage {
+    BlockState block = 1 [(gogoproto.nullable) = false,
+                          (gogoproto.embed) = true];
+}
+
+message VoteMessage {
+    bytes block_hash = 1 [(gogoproto.casttype) = "BlockHashSlice"];
+    Signature signature = 2;
+}
+
+message ChainDuoBFTMessage {
+    oneof type {
+        ProposeMessage propose = 1;
+        VoteMessage vote = 2;
+    }
+}

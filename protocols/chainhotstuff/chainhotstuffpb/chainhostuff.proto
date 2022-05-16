@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package chainhotstuffpb;
+
+import "gogoproto/gogo.proto";
+import "pkg/command/commandpb/command.proto";
+
+option go_package = "github.com/ibalajiarun/go-consensus/protocols/chainhotstuff/chainhotstuffpb";
+
+message Signature {
+    bytes sig = 1;
+    uint64 signer = 2 [(gogoproto.casttype) = "github.com/ibalajiarun/go-consensus/peer/peerpb.PeerID"];
+}
+
+message QuorumCert {
+    option (gogoproto.stable_marshaler) = true;
+    map<uint64, Signature> sigs = 1 [(gogoproto.castkey) = "github.com/ibalajiarun/go-consensus/peer/peerpb.PeerID"];
+    bytes block_hash = 2 [(gogoproto.casttype) = "BlockHashSlice"];
+}
+
+message BlockState {
+    option (gogoproto.stable_marshaler) = true;
+    bytes parent = 1 [(gogoproto.casttype) = "BlockHashSlice"];
+    commandpb.Command command = 2;
+    uint64 height = 3 [(gogoproto.casttype) = "View"];
+    QuorumCert q_c = 4;
+    uint64 proposer = 5 [(gogoproto.casttype) = "github.com/ibalajiarun/go-consensus/peer/peerpb.PeerID"];
+}
+
+message ProposeMessage {
+    BlockState block = 1 [(gogoproto.nullable) = false,
+                          (gogoproto.embed) = true];
+}
+
+message VoteMessage {
+    bytes block_hash = 1 [(gogoproto.casttype) = "BlockHashSlice"];
+    Signature signature = 2;
+}
+
+message NewViewMessage {
+    uint64 height = 1 [(gogoproto.casttype) = "View"];
+    QuorumCert q_c = 2;
+    bytes hash512 = 3;
+}
+
+message ChainHotstuffMessage {
+    oneof type {
+        ProposeMessage propose = 1;
+        VoteMessage vote = 2;
+        NewViewMessage new_view = 3;
+    }
+}

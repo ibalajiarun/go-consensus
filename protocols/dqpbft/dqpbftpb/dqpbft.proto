@@ -1,0 +1,93 @@
+syntax = "proto3";
+
+package dqpbftpb;
+
+import "gogoproto/gogo.proto";
+import "pkg/command/commandpb/command.proto";
+
+option go_package = "github.com/ibalajiarun/go-consensus/protocols/dqpbft/dqpbftpb";
+
+message DQPBFTMessage {
+    oneof type {
+        AgreementMessage agreement = 1;
+        OAgreementMessage o_agreement = 2;
+    }
+}
+
+message InstanceID {
+    uint64 replica_id   = 1 [(gogoproto.customname) = "ReplicaID",
+                            (gogoproto.casttype) = "github.com/ibalajiarun/go-consensus/peer/peerpb.PeerID"];
+    uint64 index = 2 [(gogoproto.casttype) = "Index"];
+}
+
+message InstanceState {
+    uint64 view = 1 [(gogoproto.casttype) = "View"];
+
+    InstanceID instance_id = 2 [(gogoproto.customname) = "InstanceID",
+                               (gogoproto.nullable) = false];
+
+    enum Status {
+        None = 0;
+        PrePrepared = 1;
+        Prepared = 2;
+        Committed = 3;
+        Executed = 4;
+    }
+    Status status = 3;
+
+    commandpb.Command command = 4;
+    bytes command_hash = 5;
+}
+
+message AgreementMessage {
+    uint64 view = 1 [(gogoproto.casttype) = "View"];
+
+    InstanceID instance_id = 2 [(gogoproto.customname) = "InstanceID",
+                               (gogoproto.nullable) = false];
+
+    enum Type {
+        PrePrepare = 0;
+        Prepare = 1;
+        Commit = 2;
+    }
+
+    Type type = 3;
+
+    commandpb.Command command = 4;
+    bytes command_hash = 5;
+}
+
+message OInstanceState {
+    uint64 view = 1 [(gogoproto.casttype) = "View"];
+
+    uint64 index = 2 [(gogoproto.casttype) = "Index"];
+
+    enum Status {
+        None = 0;
+        OPrePrepared = 1;
+        OPrepared = 2;
+        OCommitted = 3;
+        OExecuted = 4;
+    }
+    Status status = 3;
+
+    repeated InstanceID instances   = 4 [(gogoproto.nullable) = false];
+    bytes command_hash = 5;
+}
+
+message OAgreementMessage {
+    uint64 view = 1 [(gogoproto.casttype) = "View"];
+
+    uint64 index = 2 [(gogoproto.casttype) = "Index"];
+
+    enum Type {
+        OPrePrepare = 0;
+        OPrepare = 1;
+        OCommit = 2;
+    }
+
+    Type type = 3;
+
+    repeated InstanceID instances   = 4 [(gogoproto.nullable) = false];
+    bytes command_hash = 5;
+}

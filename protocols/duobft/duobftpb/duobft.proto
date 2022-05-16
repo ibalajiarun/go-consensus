@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+package duobftpb;
+
+import "gogoproto/gogo.proto";
+import "pkg/command/commandpb/command.proto";
+
+option go_package = "github.com/ibalajiarun/go-consensus/protocols/duobft/duobftpb";
+
+message DuoBFTMessage {
+    oneof type {
+        NormalMessage normal = 1;
+    }
+}
+
+message InstanceState {
+    uint64 view = 1 [(gogoproto.casttype) = "View"];
+
+    uint64 index = 2 [(gogoproto.casttype) = "Index"];
+
+    enum Status {
+        None = 0;
+        Prepared = 1;
+        PreCommitted = 2;
+        Committed = 3;
+        Executed = 4;
+    }
+    Status status = 3;
+
+    enum TStatus {
+        TNone = 0;
+        TPrepared = 1;
+        TCommitted = 3;
+        TExecuted = 4;
+    }
+    TStatus t_status = 4;
+
+    commandpb.Command command = 5;
+    bytes command_hash = 6;
+}
+
+message NormalMessage {
+    enum Type {
+        Prepare = 0;
+        PreCommit = 1;
+        Commit = 2;
+    }
+    Type type = 1;
+    
+    uint64 view = 2 [(gogoproto.casttype) = "View"];
+    uint64 index = 3 [(gogoproto.casttype) = "Index"];
+    commandpb.Command command = 4;
+    bytes command_hash = 5;
+}

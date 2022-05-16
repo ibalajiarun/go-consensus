@@ -1,0 +1,69 @@
+syntax = "proto3";
+
+package hybsterpb;
+
+import "gogoproto/gogo.proto";
+import "pkg/command/commandpb/command.proto";
+
+option go_package = "github.com/ibalajiarun/go-consensus/protocols/hybster/hybsterpb";
+
+message HybsterMessage {
+    oneof type {
+        NormalMessage normal = 1;
+        ViewChangeMessage view_change = 2;
+        NewViewMessage new_view = 3;
+        NewViewAckMessage new_view_ack = 4;
+    }
+}
+
+message NormalMessage {
+    enum Type {
+        Prepare = 0;
+        Commit = 1;
+
+        ViewChange = 3;
+        NewView = 4;
+        NewViewAck = 5;
+    }
+    Type type = 1;
+    
+    uint64 view = 2 [(gogoproto.casttype) = "View"];
+    uint64 order = 3 [(gogoproto.casttype) = "Order"];
+    commandpb.Command command = 4;
+    bytes command_hash = 5;
+}
+
+message Support {
+    bytes raw_msg = 1;
+    bytes cert = 2;
+    uint64 from = 3 [(gogoproto.casttype) = "github.com/ibalajiarun/go-consensus/peer/peerpb.PeerID"];
+}
+
+message ViewChangeMessage {
+    uint64 from_view = 1 [(gogoproto.casttype) = "View"];
+    uint64 to_view = 2 [(gogoproto.casttype) = "View"];
+    
+    uint64 order = 3 [(gogoproto.casttype) = "Order"];
+    
+    repeated Support history = 4 [(gogoproto.nullable) = false];
+    uint64 last_ctr = 5;
+}
+
+message NewViewMessage {
+    uint64 from_view = 1 [(gogoproto.casttype) = "View"];
+    uint64 to_view = 2 [(gogoproto.casttype) = "View"];
+    
+    uint64 order = 3 [(gogoproto.casttype) = "Order"];
+    
+    repeated Support history = 4 [(gogoproto.nullable) = false];
+    repeated Support proof = 5 [(gogoproto.nullable) = false];
+}
+
+message NewViewAckMessage {
+    uint64 view = 1 [(gogoproto.casttype) = "View"];
+    
+    uint64 order = 2 [(gogoproto.casttype) = "Order"];
+    
+    repeated Support history = 3 [(gogoproto.nullable) = false];
+}
+

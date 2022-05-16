@@ -1,0 +1,105 @@
+syntax = "proto3";
+
+package sbftxpb;
+
+import "gogoproto/gogo.proto";
+import "pkg/command/commandpb/command.proto";
+
+option go_package = "github.com/ibalajiarun/go-consensus/protocols/sbftx/sbftxpb";
+
+message SBFTxMessage {
+    oneof type {
+        NormalMessage normal = 1;
+        ONormalMessage oNormal = 2;
+        ResultMessage result = 3;
+    }
+}
+
+message InstanceID {
+    uint64 replica_id   = 1 [(gogoproto.customname) = "ReplicaID",
+                            (gogoproto.casttype) = "github.com/ibalajiarun/go-consensus/peer/peerpb.PeerID"];
+    uint64 index = 2 [(gogoproto.casttype) = "Index"];
+}
+
+message InstanceState {
+    uint64 view = 1 [(gogoproto.casttype) = "View"];
+
+    InstanceID instance_id = 2 [(gogoproto.customname) = "InstanceID",
+                               (gogoproto.nullable) = false];
+
+    enum Status {
+        None = 0;
+        Prepared = 1;
+        SignShared = 2;
+        Committed = 3;
+        StateShared = 4;
+        Executed = 5;
+    }
+    Status status = 3;
+
+    commandpb.Command command = 4;
+    bytes command_hash = 5;
+}
+
+message NormalMessage {
+    uint64 view = 1 [(gogoproto.casttype) = "View"];
+
+    InstanceID instance_id = 2 [(gogoproto.customname) = "InstanceID",
+                               (gogoproto.nullable) = false];
+
+    enum Type {
+        None = 0;
+        Prepare = 1;
+        SignShare = 2;
+        Commit = 3;
+        StateShare = 4;
+        ExecProof = 5;
+    }
+    Type type = 3;
+
+    commandpb.Command command = 4;
+    bytes command_hash = 5;
+}
+
+message ResultMessage {
+    bytes  result = 1;
+    uint64 id = 2;
+}
+
+message OInstanceState {
+    uint64 view = 1 [(gogoproto.casttype) = "View"];
+
+    uint64 index = 2 [(gogoproto.casttype) = "Index"];
+
+    enum Status {
+        None = 0;
+        Prepared = 1;
+        SignShared = 2;
+        Committed = 3;
+        StateShared = 4;
+        Executed = 5;
+    }
+    Status status = 3;
+
+    repeated InstanceID instances   = 4 [(gogoproto.nullable) = false];
+    bytes command_hash = 5;
+}
+
+message ONormalMessage {
+    uint64 view = 1 [(gogoproto.casttype) = "View"];
+
+    uint64 index = 2 [(gogoproto.casttype) = "Index"];
+
+    enum Type {
+        None = 0;
+        OPrepare = 1;
+        OSignShare = 2;
+        OCommit = 3;
+        OStateShare = 4;
+        OExecProof = 5;
+    }
+    Type type = 3;
+
+    repeated InstanceID instances   = 4 [(gogoproto.nullable) = false];
+    bytes command_hash = 5;
+}

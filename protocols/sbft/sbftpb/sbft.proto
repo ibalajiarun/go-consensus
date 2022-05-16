@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package sbftpb;
+
+import "gogoproto/gogo.proto";
+import "pkg/command/commandpb/command.proto";
+
+option go_package = "github.com/ibalajiarun/go-consensus/protocols/sbft/sbftpb";
+
+message SBFTMessage {
+    oneof type {
+        NormalMessage normal = 1;
+        ResultMessage result = 2;
+    }
+}
+
+message InstanceState {
+    uint64 view = 1 [(gogoproto.casttype) = "View"];
+
+    uint64 index = 2 [(gogoproto.casttype) = "Index"];
+
+    enum Status {
+        None = 0;
+        Prepared = 1;
+        SignShared = 2;
+        Committed = 3;
+        StateShared = 4;
+        Executed = 5;
+    }
+    Status status = 3;
+
+    commandpb.Command command = 4;
+    bytes command_hash = 5;
+}
+
+message NormalMessage {
+    uint64 view = 1 [(gogoproto.casttype) = "View"];
+
+    uint64 index = 2 [(gogoproto.casttype) = "Index"];
+
+    enum Type {
+        None = 0;
+        Prepare = 1;
+        SignShare = 2;
+        Commit = 3;
+        StateShare = 4;
+        ExecProof = 5;
+    }
+    Type type = 3;
+
+    commandpb.Command command = 4;
+    bytes command_hash = 5;
+}
+
+message ResultMessage {
+    bytes  result = 1;
+    uint64 id = 2;
+}

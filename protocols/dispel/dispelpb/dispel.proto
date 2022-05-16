@@ -1,0 +1,70 @@
+syntax = "proto3";
+
+package mirbftpb;
+
+import "gogoproto/gogo.proto";
+import "pkg/command/commandpb/command.proto";
+
+option go_package = "github.com/ibalajiarun/go-consensus/protocols/dispel/dispelpb";
+
+message DispelMessage {
+    oneof type {
+        RBMessage broadcast = 1;
+        ConsensusMessage consensus = 2;
+    }
+}
+
+message RBState {
+    uint64 peer_id = 2 [(gogoproto.customname) = "PeerID",
+                    (gogoproto.casttype) = "github.com/ibalajiarun/go-consensus/peer/peerpb.PeerID"];
+
+    enum Status {
+        None = 0;
+        Received = 1;
+        Echoed = 2;
+        Readied = 3;
+        Executed = 4;
+    }
+    Status status = 1;
+
+    commandpb.Command command = 4;
+    bytes command_hash = 5;
+}
+
+message RBMessage {
+    uint64 epoch_num = 1 [(gogoproto.casttype) = "Epoch"];
+
+    uint64 peer_id = 2 [(gogoproto.customname) = "PeerID",
+                        (gogoproto.casttype) = "github.com/ibalajiarun/go-consensus/peer/peerpb.PeerID"];
+
+    enum Type {
+        Send = 0;
+        Echo = 1;
+        Ready = 2;
+    }
+
+    Type type = 3;
+
+    commandpb.Command command = 4;
+    bytes command_hash = 5;
+}
+
+message ConsensusMessage {
+    uint64 epoch_num = 1 [(gogoproto.casttype) = "Epoch"];
+
+    uint64 peer_id = 2 [(gogoproto.customname) = "PeerID",
+                        (gogoproto.casttype) = "github.com/ibalajiarun/go-consensus/peer/peerpb.PeerID"];
+
+    uint64 round_num = 3 [(gogoproto.casttype) = "Round"];
+
+    enum Type {
+        Estimate = 0;
+        CoordValue = 1;
+        Aux = 2;
+    }
+
+    Type type = 4;
+
+    int32 estimate = 5;
+    repeated int32 aux = 6;
+}

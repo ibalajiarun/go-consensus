@@ -1,0 +1,86 @@
+syntax = "proto3";
+
+package mirbftpb;
+
+import "gogoproto/gogo.proto";
+import "pkg/command/commandpb/command.proto";
+
+option go_package = "github.com/ibalajiarun/go-consensus/protocols/mirbft/mirbftpb";
+
+message MirBFTMessage {
+    oneof type {
+        AgreementMessage agreement = 1;
+        EpochChangeMessage epoch_change = 2;
+        EpochChangeAckMessage epoch_change_ack = 3;
+        NewEpochMessage new_epoch = 4;
+    }
+}
+
+message InstanceState {
+    uint64 epoch = 1 [(gogoproto.casttype) = "Epoch"];
+
+    uint64 index = 2 [(gogoproto.casttype) = "Index"];
+
+    enum Status {
+        None = 0;
+        PrePrepared = 1;
+        Prepared = 2;
+        Committed = 3;
+        Executed = 4;
+    }
+    Status status = 3;
+
+    commandpb.Command command = 4;
+    bytes command_hash = 5;
+}
+
+message AgreementMessage {
+    uint64 epoch = 1 [(gogoproto.casttype) = "Epoch"];
+
+    uint64 index = 2 [(gogoproto.casttype) = "Index"];
+
+    enum Type {
+        PrePrepare = 0;
+        Prepare = 1;
+        Commit = 2;
+    }
+
+    Type type = 3;
+
+    commandpb.Command command = 4;
+    bytes command_hash = 5;
+}
+
+message EpochChangeMessage {
+    uint64 new_epoch = 1 [(gogoproto.casttype) = "Epoch"];
+
+    uint64 low_index = 2 [(gogoproto.casttype) = "Index"];
+
+    uint64 high_index = 3 [(gogoproto.casttype) = "Index"];
+
+    repeated InstanceState p_set = 4 [(gogoproto.nullable) = false];
+
+    repeated InstanceState q_set = 5 [(gogoproto.nullable) = false];
+}
+
+message EpochChangeAckMessage {
+    uint64 new_epoch = 1 [(gogoproto.casttype) = "Epoch"];
+
+    uint64 ack_for = 2 [(gogoproto.casttype) = "github.com/ibalajiarun/go-consensus/peer/peerpb.PeerID"];
+
+    bytes digest = 3;
+}
+
+message NewEpochProof {
+    uint64 ack_for = 2 [(gogoproto.casttype) = "github.com/ibalajiarun/go-consensus/peer/peerpb.PeerID"];
+
+    bytes digest = 3;
+}
+
+message NewEpochMessage {
+    uint64 new_epoch = 1 [(gogoproto.casttype) = "Epoch"];
+
+    repeated NewEpochProof nv_proof = 2 [(gogoproto.nullable) = false];
+
+    map<uint64, InstanceState> instances = 3 [(gogoproto.castkey) = "Index", (gogoproto.nullable) = false];
+}

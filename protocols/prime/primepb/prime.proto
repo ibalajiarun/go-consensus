@@ -1,0 +1,111 @@
+syntax = "proto3";
+
+package primepb;
+
+import "gogoproto/gogo.proto";
+import "pkg/command/commandpb/command.proto";
+
+option go_package = "github.com/ibalajiarun/go-consensus/protocols/prime/primepb";
+
+message PrimeMessage {
+    oneof type {
+        PreOrderMessage preorder = 1;
+        OrderMessage order = 2;
+        ResultMessage result = 3;
+    }
+}
+
+message InstanceID {
+    uint64 replica_id   = 1 [(gogoproto.customname) = "ReplicaID",
+                            (gogoproto.casttype) = "github.com/ibalajiarun/go-consensus/peer/peerpb.PeerID"];
+    uint64 index = 2 [(gogoproto.casttype) = "Index"];
+}
+
+message InstanceState {
+    uint64 view = 1 [(gogoproto.casttype) = "View"];
+
+    InstanceID instance_id = 2 [(gogoproto.customname) = "InstanceID",
+                               (gogoproto.nullable) = false];
+
+    enum Status {
+        None = 0;
+        PreOrder = 1;
+        PreOrderAck = 2;
+        Summary = 3;
+        Committed = 4;
+        Executed = 5;
+    }
+    Status status = 3;
+
+    commandpb.Command command = 4;
+    bytes command_hash = 5;
+}
+
+message PreOrderMessage {
+    InstanceID instance_id = 2 [(gogoproto.customname) = "InstanceID",
+                               (gogoproto.nullable) = false];
+
+    enum Type {
+        PORequest = 0;
+        POAck = 1;
+        POSummary = 2;
+    }
+
+    Type type = 3;
+
+    commandpb.Command command = 4;
+    bytes command_hash = 5;
+
+    POSummary po_summary = 6 [(gogoproto.customname) = "POSummary",
+                              (gogoproto.nullable) = false];
+}
+
+message ResultMessage {
+    repeated bytes  result = 1;
+    repeated uint64 id = 2;
+}
+
+message POSummary {
+    repeated uint64 po_summary = 5 [(gogoproto.customname) = "POSummary",
+                                    (gogoproto.casttype) = "Index"];
+}
+
+message POSummaryMatrix {
+    repeated POSummary po_summary_matrix = 5 [(gogoproto.customname) = "POSummaryMatrix",
+                                              (gogoproto.nullable) = false];
+}
+
+message OInstanceState {
+    uint64 view = 1 [(gogoproto.casttype) = "View"];
+
+    uint64 index = 2 [(gogoproto.casttype) = "Index"];
+
+    enum Status {
+        None = 0;
+        PrePrepared = 1;
+        Prepared = 2;
+        Committed = 3;
+        Executed = 4;
+    }
+    Status status = 3;
+
+    POSummaryMatrix po_summary_matrix = 5 [(gogoproto.customname) = "POSummaryMatrix"];
+    bytes po_summary_matrix_hash = 6 [(gogoproto.customname) = "POSummaryMatrixHash"];
+}
+
+message OrderMessage {
+    uint64 view = 1 [(gogoproto.casttype) = "View"];
+
+    uint64 index = 2 [(gogoproto.casttype) = "Index"];
+
+    enum Type {
+        PrePrepare = 0;
+        Prepare = 1;
+        Commit = 2;
+    }
+
+    Type type = 3;
+
+    POSummaryMatrix po_summary_matrix = 5 [(gogoproto.customname) = "POSummaryMatrix"];
+    bytes po_summary_matrix_hash = 6 [(gogoproto.customname) = "POSummaryMatrixHash"];  
+}

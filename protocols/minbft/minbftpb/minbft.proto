@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package minbftpb;
+
+import "gogoproto/gogo.proto";
+import "pkg/command/commandpb/command.proto";
+
+option go_package = "github.com/ibalajiarun/go-consensus/protocols/minbft/minbftpb";
+
+message MinBFTMessage {
+    oneof type {
+        NormalMessage normal = 1;
+    }
+}
+
+message NormalMessage {
+    enum Type {
+        Prepare = 0;
+        Commit = 1;
+
+        ViewChange = 3;
+        NewView = 4;
+        NewViewAck = 5;
+    }
+    Type type = 1;
+    
+    uint64 view = 2 [(gogoproto.casttype) = "View"];
+    uint64 order = 3 [(gogoproto.casttype) = "Order"];
+    commandpb.Command command = 4;
+    bytes command_hash = 5;
+}

@@ -1,0 +1,16 @@
+bin/
+*.so
+*.o
+*_t.c
+*_u.c
+*_t.h
+*_u.h
+target/
+*.a
+*.tfvars
+.terraform
+*.tfplan*
+*.tfstate*
+azure.json
+packer-vars.json
+keys/

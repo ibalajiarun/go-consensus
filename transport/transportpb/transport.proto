@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package transportpb;
+
+import "gogoproto/gogo.proto";
+import "peer/peerpb/peer.proto";
+
+option go_package = "github.com/ibalajiarun/go-consensus/transport/transportpb";
+
+message TransMsg {
+    repeated peerpb.Message msgs = 1 [(gogoproto.nullable) = false];
+}
+
+// Empty is an empty message. It is identical to google.protobuf.Empty, but
+// permits future modifications because it is custom.
+message Empty {
+}
+
+// PeerTransport is an internal service between nodes
+service PeerTransport {
+    rpc Message (stream TransMsg) returns (Empty) {
+    }
+}
+
+message ClientPacket {
+    bytes message = 1;
+    bytes signature = 2;
+}
+
+// ClientService is an external service that clients use to issue operations.
+service CommandService {
+    rpc Apply (ClientPacket) returns (ClientPacket) {}
+}

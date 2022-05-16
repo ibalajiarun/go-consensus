@@ -1,0 +1,48 @@
+syntax = "proto3";
+package commandpb;
+
+option go_package = "github.com/ibalajiarun/go-consensus/pkg/command/commandpb";
+
+import "gogoproto/gogo.proto";
+
+message KVOp {
+    bytes key = 1 [(gogoproto.casttype) = "Key"];
+    bytes value = 2;
+    bool read = 3;
+}
+
+message KVOpResult {
+    bytes key = 1 [(gogoproto.casttype) = "Key"];
+    bytes value = 2;
+    bool write_success = 3;
+}
+
+message Operation {
+    oneof type {
+        KVOp KVOp = 1;
+    }
+}
+
+message OperationResult {
+    oneof type {
+        KVOpResult KVOpResult = 1;
+    }
+}
+
+message Command {
+    uint64 timestamp    = 1 [(gogoproto.customname) = "Timestamp"];
+    repeated Operation ops = 2 [(gogoproto.nullable) = false];
+    uint64 target_id = 3 [(gogoproto.customname) = "Target",
+                          (gogoproto.casttype) = "github.com/ibalajiarun/go-consensus/peer/peerpb.PeerID"];
+    bytes meta = 4;
+    bytes conflict_key = 5;
+    map<string, string> trace_info = 6;
+}
+
+message CommandResult {
+    uint64 timestamp    = 1 [(gogoproto.customname) = "Timestamp"];
+    repeated OperationResult op_results = 2 [(gogoproto.nullable) = false];
+    uint64 target_id = 3 [(gogoproto.customname) = "Target",
+                          (gogoproto.casttype) = "github.com/ibalajiarun/go-consensus/peer/peerpb.PeerID"];
+    bytes meta = 4;
+}

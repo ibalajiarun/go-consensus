@@ -1,0 +1,112 @@
+syntax = "proto3";
+package peerpb;
+
+option go_package = "github.com/ibalajiarun/go-consensus/peer/peerpb";
+
+import "gogoproto/gogo.proto";
+
+/*
+* Peer related proto messages.
+*/
+message BasicPeerInfo {
+    string pod_name = 1;
+    string host_machine = 2;
+    string pod_ip = 3 [(gogoproto.customname) = "PodIP"];
+    string region = 4;
+}
+
+message PeerInfo {
+    BasicPeerInfo peer_info = 1 [(gogoproto.embed) = true,
+                                 (gogoproto.nullable) = false];
+    uint64 peer_id = 2 [(gogoproto.customname) = "PeerID",
+                        (gogoproto.casttype) = "PeerID"];
+}
+
+enum Algorithm {
+    PBFT = 0;
+    SBFT = 1;
+    Zyzzyva = 2;
+    EzBFT = 3;
+    Hybster = 4;
+    Destiny = 5;
+    Dester = 6;
+    LinHybster = 7;
+    SBFTSlow = 8;
+    Hotstuff = 9;
+    Broadcast = 10;
+    Prime = 11;
+    PreDestiny = 12;
+    MinBFT = 13;
+    DuoBFT = 14;
+    MinBFTSig = 15;
+    SBFTx = 16;
+    Hybsterx = 17;
+    ChainHotstuff = 18;
+    RCC = 19;
+    MirBFT = 20;
+    Dispel = 21;
+    DQPBFT = 22;
+    DQSBFTSlow = 23;
+    ChainDuoBFT = 24;
+    MultiChainDuoBFT = 25;
+    MultiChainDuoBFTRCC = 26;
+}
+
+message MultiChainDuoBFTConfig {
+    bool rcc_mode = 1 [(gogoproto.customname) = "RCCMode"];
+    uint32 instances_per_peer = 2;
+    bool skip_slow_path = 3;
+}
+
+message PeerConfig {
+    repeated PeerInfo peer_details = 1 [(gogoproto.nullable) = false];
+    int32 listen_port = 2;
+    bool log_verbose = 3;
+
+    Algorithm algorithm = 4;
+    
+    int32 max_failures = 5;
+    int32 max_fast_failures = 6;
+    uint64 leader_id = 7 [(gogoproto.customname) = "LeaderID",
+                          (gogoproto.casttype) = "PeerID"];
+    
+    repeated string secret_keys = 8;
+    repeated string public_keys = 9;
+    
+    string enclave_path = 10;
+
+    int32 enclave_batch_size = 11;
+
+    uint32 dq_o_batch_size = 12;
+    uint32 dq_o_batch_timeout = 22;
+    map<string, uint32> workers = 14;
+    map<string, uint32> workers_queue_sizes = 18;
+
+    uint32 cmd_batch_size = 15;
+    uint32 cmd_batch_timeout = 16;
+
+    int32 req_buf_threshold = 17;
+
+    bool threshsign_fast_lagrange = 19;
+
+    Algorithm rcc_algorithm = 20;
+
+    bool dispel_wait_for_all_rb = 21;
+
+    MultiChainDuoBFTConfig multichainduobft = 23 [(gogoproto.customname) = "MultiChainDuoBFT"];
+}
+
+/*
+* Transport related proto messages.
+*/
+
+message Message {
+    uint64 from = 1 [(gogoproto.casttype) = "PeerID"];
+    uint64 to = 2 [(gogoproto.casttype) = "PeerID"];
+
+    bytes content = 3;
+
+    bytes certificate = 4;
+
+    map<string, string> trace_info = 5;
+}

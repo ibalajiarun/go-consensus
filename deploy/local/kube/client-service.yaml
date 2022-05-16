@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: go-consensus-client-service
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9091"
+spec:
+  clusterIP: "None"
+  selector:
+    app: go-consensus-client
+  ports:
+    - port: 9091
+      targetPort: 9091
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: go-consensus-server-service
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9091"
+spec:
+  clusterIP: "None"
+  selector:
+    app: go-consensus-server
+  ports:
+    - port: 9091
+      targetPort: 9091

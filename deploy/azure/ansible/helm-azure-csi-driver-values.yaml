@@ -1,0 +1,3 @@
+controller:
+  replicas: 1
+  runOnMaster: true

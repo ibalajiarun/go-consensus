@@ -1,0 +1,18 @@
+#!/bin/sh
+apt install -y jq
+export METADATA=$(curl -o /home/azureuser/metadata.json -H Metadata:true --noproxy "*" "http://169.254.169.254/metadata/instance?api-version=2020-06-01")
+export CLUSTER_REGION=$(jq -r '.compute.location' /home/azureuser/metadata.json)
+export CLUSTER_INSTANCE_TYPE=$(jq -r '.compute.vmSize' /home/azureuser/metadata.json)
+export CLUSTER_EXTERNAL_IP=$(jq -r '.network.interface[0].ipv4.ipAddress[0].publicIpAddress' /home/azureuser/metadata.json)
+export CLUSTER_NODE_ROLE=$(jq -r '(.compute.vmScaleSetName/"-")[2]' /home/azureuser/metadata.json)
+export INSTALL_K3S_SKIP_DOWNLOAD=true
+export INSTALL_K3S_SKIP_ENABLE=true
+export INSTALL_K3S_EXEC="agent --server https://${master_ip}:6443 \
+--token ${token}
+--node-external-ip $CLUSTER_EXTERNAL_IP
+--node-label topology.kubernetes.io/region=$CLUSTER_REGION
+--node-label node.kubernetes.io/instance-type=$CLUSTER_INSTANCE_TYPE
+--node-label node-role=$CLUSTER_NODE_ROLE"
+sh /opt/get_k3s.sh 
+mkdir -p /etc/kubernetes
+service k3s-agent start

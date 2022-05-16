@@ -1,0 +1,190 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: go-consensus-server
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: go-consensus-server
+  template:
+    metadata:
+      labels:
+        app: go-consensus-server
+    spec:
+      hostNetwork: true
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/region
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: go-consensus-server
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: go-consensus-server
+      nodeSelector:
+        node-role: server
+      containers:
+        - name: go-consensus-server
+          image: ghcr.io/ibalajiarun/go-consensus:latest
+          imagePullPolicy: Always
+          command:
+            - "/bin/bash"
+            - "-ecx"
+            - "exec /bin/peer"
+          ports:
+            - containerPort: 7000
+          # volumeMounts:
+          #   - mountPath: /dev/sgx
+          #     name: dev-sgx
+          securityContext:
+            privileged: true
+          env:
+            - name: HOSTNAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: REGION
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: PODIP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: PODNAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: DD_AGENT_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: DD_TRACE_SAMPLE_RATE
+              value: "0.2"
+            - name: DD_TRACE_RATE_LIMIT
+              value: "20.0"
+      # volumes:
+      #   - name: dev-sgx
+      #     hostPath:
+      #       path: /dev/sgx
+      #       type: Directory
+      # No pre-stop hook is required, a SIGTERM plus some time is all that's
+      # needed for graceful shutdown of a node.
+      terminationGracePeriodSeconds: 1
+      hostAliases:
+        - ip: "40.71.207.117"
+          hostnames:
+            - "ssrg"
+---
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: go-consensus-client
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: go-consensus-client
+  template:
+    metadata:
+      labels:
+        app: go-consensus-client
+    spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/region
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: go-consensus-client
+        # - maxSkew: 1
+        #   topologyKey: kubernetes.io/hostname
+        #   whenUnsatisfiable: DoNotSchedule
+        #   labelSelector:
+        #     matchLabels:
+        #       app: go-consensus-client
+      nodeSelector:
+        node-role: client
+      # podAffinity:
+      #   requiredDuringSchedulingIgnoredDuringExecution:
+      #     - labelSelector:
+      #         matchExpressions:
+      #           - key: app
+      #             operator: In
+      #             values:
+      #               - go-consensus-server
+      #         topologyKey: kubernetes.io/hostname
+      containers:
+        - name: go-consensus-client
+          image: ghcr.io/ibalajiarun/go-consensus:latest
+          imagePullPolicy: Always
+          command:
+            - "/bin/bash"
+            - "-ecx"
+            - "exec /bin/client"
+          ports:
+            - containerPort: 7000
+          env:
+            - name: HOSTNAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: REGION
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: PODIP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: PODNAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: DD_AGENT_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+      # No pre-stop hook is required, a SIGTERM plus some time is all that's
+      # needed for graceful shutdown of a node.
+      terminationGracePeriodSeconds: 1
+      hostAliases:
+        - ip: "40.71.207.117"
+          hostnames:
+            - "ssrg"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: go-consensus-client-service
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9091"
+spec:
+  clusterIP: "None"
+  selector:
+    app: go-consensus-client
+  ports:
+    - port: 9091
+      targetPort: 9091
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: go-consensus-server-service
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9091"
+spec:
+  clusterIP: "None"
+  selector:
+    app: go-consensus-server
+  ports:
+    - port: 9091
+      targetPort: 9091

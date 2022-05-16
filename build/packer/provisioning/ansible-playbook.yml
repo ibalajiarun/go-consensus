@@ -1,0 +1,94 @@
+---
+# playbook.yml
+- name: "Provision Image"
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Enable IPv4 forwarding
+      sysctl:
+        name: net.ipv4.ip_forward
+        value: "1"
+        state: present
+        reload: yes
+
+    - name: Enable IPv6 forwarding
+      sysctl:
+        name: net.ipv6.conf.all.forwarding
+        value: "1"
+        state: present
+        reload: yes
+
+    - name: Download k3s installer
+      get_url:
+        url: https://get.k3s.io/
+        dest: /opt/get_k3s.sh
+        owner: root
+        group: root
+        mode: 755
+
+    - name: Install k3s
+      shell: 
+        cmd: /opt/get_k3s.sh 
+        executable: /bin/bash
+      environment: 
+        - INSTALL_K3S_SKIP_START: "true"
+        - INSTALL_K3S_VERSION: v1.19.10+k3s1
+        - INSTALL_K3S_SKIP_ENABLE: "true"
+
+    - name: Install SGX pre-requisite Packages
+      apt:
+        name:
+          - "dkms"
+          - "libssl-dev"
+          - "libcurl4-openssl-dev"
+          - "libprotobuf-dev"
+          - "build-essential"
+          - "python"
+        state: latest
+        update_cache: yes
+        install_recommends: no
+
+    - name: Download Intel SGX Driver
+      get_url:
+        url: "https://download.01.org/intel-sgx/sgx-dcap/1.8/linux/distro/ubuntu18.04-server/sgx_linux_x64_driver_1.36.bin"
+        dest: /tmp/sgx_linux_x64_driver.bin
+        mode: 0755
+        timeout: 120
+      retries: 3
+
+    - name: Install the Intel SGX Driver
+      command: /tmp/sgx_linux_x64_driver.bin
+
+    - name: Remove the Intel SGX driver installer
+      file:
+        path: /tmp/sgx_linux_x64_driver.bin
+        state: absent
+
+    - name: Install apt-transport-https APT package
+      apt:
+        name: apt-transport-https
+        state: latest
+
+    - name: Add APT repository key
+      apt_key:
+        url: "https://download.01.org/intel-sgx/sgx_repo/ubuntu/intel-sgx-deb.key"
+        state: present
+
+    - name: Add APT repository
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.01.org/intel-sgx/sgx_repo/ubuntu {{ ansible_distribution_release }} main"
+        state: present
+        update_cache: yes  
+
+    - name: Install the Intel libsgx packages
+      apt:
+        name:
+          - libsgx-launch
+          - libsgx-urts
+        state: latest
+        install_recommends: no
+
+
+
+

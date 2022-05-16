@@ -1,0 +1,143 @@
+---
+- name: "Setup k3s master"
+  hosts: all
+  become: true
+  vars:
+    ansible_user: azureuser
+    systemd_dir: /etc/systemd/system
+    master_ip: "{{ hostvars[groups['all'][0]]['ansible_host'] | default(groups['all'][0]) }}"
+
+  tasks:
+    - name: Ensure k3s service is stopped
+      systemd:
+        name: k3s
+        daemon_reload: yes
+        state: stopped
+        enabled: no
+      register: disable_k3s_result
+      failed_when: "disable_k3s_result is failed and 'Could not find the requested service' not in disable_k3s_result.msg"
+
+    - name: Copy k3s service file
+      template:
+        src: "k3s.service.j2"
+        dest: "{{ systemd_dir }}/k3s.service"
+        owner: root
+        group: root
+        mode: 0755
+      vars:
+        mode: "server"
+        additional_args: "--disable traefik"
+
+    - name: Enable and check k3s service
+      systemd:
+        name: k3s
+        daemon_reload: yes
+        state: restarted
+        enabled: yes
+
+    - name: Create directory .kube
+      file:
+        path: /home/{{ ansible_user }}/.kube
+        state: directory
+        owner: "{{ ansible_user }}"
+
+    - name: Copy config file to user home directory
+      copy:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: /home/{{ ansible_user }}/.kube/config
+        remote_src: yes
+        owner: "{{ ansible_user }}"
+
+    - name: Replace https://127.0.0.1:6443 by https://master_ip:6443
+      replace:
+        path: /home/{{ ansible_user }}/.kube/config
+        regexp: "https://127.0.0.1:6443"
+        replace: "https://{{master_ip}}:6443"
+
+    - name: Fetch the file from the master to local
+      run_once: yes
+      fetch:
+        src: /home/{{ ansible_user }}/.kube/config
+        dest: k3s.yaml
+        flat: yes
+
+    - name: Wait for node-token
+      wait_for:
+        path: /var/lib/rancher/k3s/server/node-token
+      run_once: true
+    
+    - name: Fetch node token from the master to local
+      run_once: yes
+      fetch:
+        src: /var/lib/rancher/k3s/server/node-token
+        dest: node-token
+        flat: yes
+
+    - name: Create directory /etc/kubernetes on remote nodes
+      file:
+        path: /etc/kubernetes
+        state: directory
+
+- name: "Configure k3s services"
+  hosts: localhost
+  connection: local
+  become: true
+  tasks:
+    - name: Deploy Flannel Fixer to the k3s cluster
+      community.kubernetes.k8s:
+        kubeconfig: k3s.yaml
+        state: present
+        src: flannel-fixer-k3s-deployment.yaml
+
+    - name: Configure Azure cloud in k3s
+      community.kubernetes.k8s:
+        kubeconfig: k3s.yaml
+        state: present
+        src: azure-cloud-provider.yaml
+
+    - name: Add azuredisk-csi-driver chart repo
+      community.kubernetes.helm_repository:
+        name: azuredisk-csi-driver
+        repo_url: "https://raw.githubusercontent.com/kubernetes-sigs/azuredisk-csi-driver/master/charts"
+
+    - name: Deploy Azure Disk CSI Driver
+      community.kubernetes.helm:
+        kubeconfig: k3s.yaml
+        name: azuredisk-csi-driver
+        chart_ref: azuredisk-csi-driver/azuredisk-csi-driver
+        chart_version: 1.2.0
+        update_repo_cache: true
+        release_namespace: kube-system
+        values_files:
+          - helm-kube-prom-stack-values.yaml
+
+    - name: Deploy Persistent Volume
+      community.kubernetes.k8s:
+        kubeconfig: k3s.yaml
+        state: present
+        src: pv-azuredisk-csi.yaml
+
+    - name: Delete Persistent Volume Claim if Present
+      community.kubernetes.k8s:
+        kubeconfig: k3s.yaml
+        state: absent
+        kind: PersistentVolumeClaim
+        name: prometheus-kube-prometheus-stack-prometheus-db-prometheus-kube-prometheus-stack-prometheus-0
+        namespace: monitoring
+
+    - name: Add prometheus-community chart repo
+      community.kubernetes.helm_repository:
+        name: prometheus-community
+        repo_url: "https://prometheus-community.github.io/helm-charts"
+
+    - name: Deploy Prometheus Operator chart
+      community.kubernetes.helm:
+        kubeconfig: k3s.yaml
+        name: kube-prometheus-stack
+        chart_ref: prometheus-community/kube-prometheus-stack
+        chart_version: 12.12.2
+        release_namespace: monitoring
+        create_namespace: true
+        update_repo_cache: true
+        values_files:
+          - helm-kube-prom-stack-values.yaml

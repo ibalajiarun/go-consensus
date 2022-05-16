@@ -1,0 +1,83 @@
+FROM ubuntu:18.04 as sgx-runtime
+LABEL maintainer="balajia@vt.edu"
+
+ENV psw_deb https://download.01.org/intel-sgx/sgx-linux/2.7.1/distro/ubuntu18.04-server/libsgx-enclave-common_2.7.101.3-bionic1_amd64.deb
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && \
+    apt-get install -y wget libssl-dev libcurl4-openssl-dev libprotobuf-dev gnupg && \
+    rm -rf /var/lib/apt/lists/* && \
+    rm -rf /var/cache/apt/archives/*
+
+RUN ["/bin/bash", "-c", "echo 'deb [arch=amd64] https://download.01.org/intel-sgx/sgx_repo/ubuntu bionic main' | tee /etc/apt/sources.list.d/intel-sgx.list && \
+    set -o pipefail && wget -qO - https://download.01.org/intel-sgx/sgx_repo/ubuntu/intel-sgx-deb.key | apt-key add - && \
+    apt-get update && \
+    apt-get install --no-install-recommends -y libsgx-launch libsgx-urts && \
+    rm -rf /var/lib/apt/lists/* && \
+    rm -rf /var/cache/apt/archives/*"]
+
+WORKDIR /root
+
+################################################################################
+
+FROM sgx-runtime as sgx-sdk
+LABEL maintainer="balajia@vt.edu"
+
+ENV sdk_bin https://download.01.org/intel-sgx/sgx-linux/2.11/distro/ubuntu18.04-server/sgx_linux_x64_sdk_2.11.100.2.bin
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && \
+    apt-get install -y build-essential python wget libssl-dev libcurl4-openssl-dev libprotobuf-dev pkg-config && \
+    rm -rf /var/lib/apt/lists/* && \
+    rm -rf /var/cache/apt/archives/*
+
+ENV bintools https://download.01.org/intel-sgx/sgx-linux/2.11/as.ld.objdump.gold.r2.tar.gz
+RUN wget -O /root/bintools.tar.gz ${bintools} && \
+    tar -C /usr/local/bin/ --strip-components=3 -xzf /root/bintools.tar.gz external/toolset/ubuntu18.04 && \
+    rm /root/bintools.tar.gz
+
+RUN mkdir -p /root/sgx && \
+    mkdir -p /etc/init && \
+    wget -O /root/sgx/sdk.bin ${sdk_bin} && \
+    cd /root/sgx && \
+    chmod +x /root/sgx/sdk.bin && \
+    echo -e 'no\n/opt' | /root/sgx/sdk.bin && \
+    echo 'source /opt/sgxsdk/environment' >> /root/.bashrc && \
+    rm -rf /root/sgx/*
+
+WORKDIR /root
+
+################################################################################
+
+FROM sgx-sdk as sgx-go
+LABEL maintainer="balajia@vt.edu"
+
+ENV protoc_bin https://github.com/protocolbuffers/protobuf/releases/download/v3.14.0/protoc-3.14.0-linux-x86_64.zip
+ENV go_bin https://golang.org/dl/go1.17.5.linux-amd64.tar.gz
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && \
+    apt-get install -y unzip git && \
+    rm -rf /var/lib/apt/lists/* && \
+    rm -rf /var/cache/apt/archives/*
+
+RUN wget -O /root/protoc.zip ${protoc_bin} && \
+    cd /root && \
+    unzip protoc.zip -d protoc3 && \
+    mv protoc3/bin/* /usr/local/bin/ && \
+    mv protoc3/include/* /usr/local/include/ && \
+    rm -rf /root/protoc3 /root/protoc.zip
+
+RUN wget -O /root/golang.tar.gz ${go_bin} && \
+    tar -C /usr/local -xzf /root/golang.tar.gz && \
+    rm /root/golang.tar.gz
+
+ENV GOROOT /usr/local/go
+ENV GOPATH /root/gohome
+ENV PATH $GOPATH/bin:$GOROOT/bin:$PATH
+RUN export GOROOT GOPATH PATH
+
+WORKDIR /root
+
+################################################################################

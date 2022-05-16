@@ -1,0 +1,99 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: go-consensus-server
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: go-consensus-server
+  template:
+    metadata:
+      labels:
+        app: go-consensus-server
+    spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/region
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: go-consensus-server
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: go-consensus-server
+      # nodeSelector:
+      #   node-role: client
+      # affinity:
+      #   podAntiAffinity:
+      #     requiredDuringSchedulingIgnoredDuringExecution:
+      #       - labelSelector:
+      #           matchExpressions:
+      #             - key: app
+      #               operator: In
+      #               values:
+      #                 - go-consensus-server
+      #         topologyKey: kubernetes.io/hostname
+      containers:
+        - name: go-consensus-server
+          image: ghcr.io/ibalajiarun/go-consensus:latest
+          imagePullPolicy: Always
+          command:
+            - "/bin/bash"
+            - "-ecx"
+            # The use of qualified `hostname -f` is crucial:
+            # Other nodes aren't able to look up the unqualified hostname.
+            - "exec /bin/peer"
+          ports:
+            - containerPort: 7000
+          volumeMounts:
+            - mountPath: /dev/sgx
+              name: dev-sgx
+            - mountPath: /var/run/aesmd
+              name: aesmd
+          securityContext:
+            privileged: true
+          env:
+            - name: HOSTNAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: REGION
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: PODIP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: PODNAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: DD_AGENT_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+      volumes:
+        - name: dev-sgx
+          hostPath:
+            path: /dev/isgx
+            type: CharDevice
+        # - name: dev-sgx
+        #   hostPath:
+        #     path: /dev/sgx
+        #     type: Directory
+        - name: aesmd
+          hostPath:
+            path: /var/run/aesmd
+            type: Directory
+      # No pre-stop hook is required, a SIGTERM plus some time is all that's
+      # needed for graceful shutdown of a node.
+      terminationGracePeriodSeconds: 1
+      hostAliases:
+        - ip: "40.71.207.117"
+          hostnames:
+            - "ssrg"

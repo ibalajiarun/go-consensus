@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: go-consensus-client
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: go-consensus-client
+  template:
+    metadata:
+      labels:
+        app: go-consensus-client
+    spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/region
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: go-consensus-client
+      # nodeSelector:
+      #   node-role: client
+      # affinity:
+      #   podAntiAffinity:
+      #     requiredDuringSchedulingIgnoredDuringExecution:
+      #       - labelSelector:
+      #           matchExpressions:
+      #             - key: app
+      #               operator: In
+      #               values:
+      #                 - go-consensus-client
+      #         topologyKey: kubernetes.io/hostname
+      podAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                    - go-consensus-server
+              topologyKey: kubernetes.io/hostname
+      containers:
+        - name: go-consensus-client
+          image: ghcr.io/ibalajiarun/go-consensus:latest
+          imagePullPolicy: Always
+          command:
+            - "/bin/bash"
+            - "-ecx"
+            # The use of qualified `hostname -f` is crucial:
+            # Other nodes aren't able to look up the unqualified hostname.
+            - "exec /bin/client"
+          ports:
+            - containerPort: 7000
+          env:
+            - name: HOSTNAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: REGION
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: PODIP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: PODNAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: DD_AGENT_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+          # resources:
+          #   requests:
+          #     memory: "512Mi"
+          #     cpu: "0.5"
+          #   limits:
+          #     memory: "1024Mi"
+          #     cpu: "0.5"
+      # No pre-stop hook is required, a SIGTERM plus some time is all that's
+      # needed for graceful shutdown of a node.
+      terminationGracePeriodSeconds: 1
+      hostAliases:
+        - ip: "40.71.207.117"
+          hostnames:
+            - "ssrg"

@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-azuredisk
+spec:
+  capacity:
+    storage: 64Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  csi:
+    driver: disk.csi.azure.com
+    readOnly: false
+    volumeHandle: /subscriptions/850d15b7-9d0f-4e19-b4db-3f92b8b2a9b0/resourceGroups/destiny-rg/providers/Microsoft.Compute/disks/prometheus
+    volumeAttributes:
+      fsType: ext4

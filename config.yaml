@@ -1,0 +1,52 @@
+node_count: 7
+client_count: 2
+algorithm: Destiny
+max_failures: 4
+max_fast_failures: 0
+leader_region: "winter"
+key_file: "keys/bls_7_13.txt"
+server:
+  log_verbose: false
+  enclave_path: "/lib/"
+  enclave_batch_size: 1
+  dq_o_batch_size: 24
+  dq_o_batch_timeout: 5
+  destiny_signer_workers: 1
+  workers:
+    tss_sign: 4
+    tss_agg: 8
+    tss_verify: 8
+    mac_sign: 24
+    edd_sign: 2
+    edd_verify: 2
+    mcd_edd_usig_sign: 8
+    mcd_edd_sign: 8
+    mcd_edd_verify: 8
+  workers_queue_sizes:
+    tss_sign: 128
+    tss_agg: 128
+    tss_verify: 128
+    mac_sign: 512
+    edd_sign: 8
+    edd_verify: 8
+    mcd_edd_usig_sign: 128
+    mcd_edd_sign: 128
+    mcd_edd_verify: 128
+  threshsign_fast_lagrange: true
+  req_buf_threshold: 1
+  cmd_batch_size: 1
+  cmd_batch_timeout: 1
+  rcc_algorithm: PBFT
+  dispel_wait_for_all_rb: true
+  multichain_duobft_config: 
+    instances_per_peer: 10
+    skip_slow_path: false
+client:
+  log_verbose: false
+  max_inflight_requests: 130
+  request_payload_size: 10
+  request_ops_batch_size: 1
+  total_requests: 10000000
+  sleep_time_seconds: 15
+  conflict_percent: 0
+  fast_response_percent: 100 # for duobft

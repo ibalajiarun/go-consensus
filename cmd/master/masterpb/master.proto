@@ -1,0 +1,69 @@
+syntax = "proto3";
+
+package masterpb;
+
+import "gogoproto/gogo.proto";
+import "peer/peerpb/peer.proto";
+
+option go_package = "github.com/ibalajiarun/go-consensus/cmd/master/masterpb";
+
+message ServerResponse {
+    peerpb.PeerConfig config = 1 [(gogoproto.embed) = true];
+    uint64 peer_id = 2 [(gogoproto.customname) = "PeerID",
+                           (gogoproto.casttype) = "github.com/ibalajiarun/go-consensus/peer/peerpb.PeerID"];    
+}
+
+message BaseServerConfig {
+    string key_file = 4;
+    string enclave_path = 5;
+    bool log_verbose = 6;
+    int32 enclave_batch_size = 7;
+    uint32 dq_o_batch_size = 8;
+    uint32 dq_o_batch_timeout = 18;
+    uint32 destiny_signer_workers = 9;
+    map<string, uint32> workers = 10;
+    map<string, uint32> workers_queue_sizes = 14;
+
+    uint32 cmd_batch_size = 11;
+    uint32 cmd_batch_timeout = 12;
+    int32 req_buf_threshold = 13;
+
+    bool threshsign_fast_lagrange = 15;
+    bool dispel_wait_for_all_rb = 16;
+    peerpb.Algorithm rcc_algorithm = 17;
+    peerpb.MultiChainDuoBFTConfig multichain_duobft_config = 19 [(gogoproto.customname) = "MultiChainDuoBFTConfig"];
+}
+
+message BaseClientConfig {
+    uint32 max_inflight_requests = 1;
+    uint32 total_requests = 2;
+    uint64 request_payload_size = 3;
+    uint64 request_ops_batch_size = 4;
+    uint64 sleep_time_seconds = 5;
+    uint64 conflict_percent = 6;
+    uint64 fast_response_percent = 7;
+    bool log_verbose = 8;
+}
+
+message ClientConfig {
+    BaseClientConfig config = 1 [(gogoproto.embed) = true];
+    repeated peerpb.PeerInfo nodes = 2 [(gogoproto.nullable) = false];
+    peerpb.Algorithm algorithm = 3;
+    int32 max_failures = 4;
+    int32 max_fast_failures = 5;
+    uint64 leader_id = 6 [(gogoproto.customname) = "LeaderID",
+                          (gogoproto.casttype) = "github.com/ibalajiarun/go-consensus/peer/peerpb.PeerID"];
+}
+
+message ClientResponse {
+    ClientConfig config = 1;
+    uint32 client_id = 2;
+}
+
+message Empty {
+}
+
+service ServiceDiscovery {
+    rpc Register(peerpb.BasicPeerInfo) returns (ServerResponse);
+    rpc GetServiceInfo(peerpb.BasicPeerInfo) returns (ClientResponse);
+}

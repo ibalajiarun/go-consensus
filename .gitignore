@@ -8,7 +8,7 @@ bin/
 target/
 *.a
 *.tfvars
-.terraform
+*.terraform*
 *.tfplan*
 *.tfstate*
 azure.json

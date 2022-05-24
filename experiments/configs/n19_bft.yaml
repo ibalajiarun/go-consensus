@@ -1,0 +1,23 @@
+spec_file_path: "deploy/azure/kube/erunner.yaml"
+run_config_path: "config.yaml"
+data_dir_prefix: "exp_data/n19"
+kube_config_path: "k3s.yaml"
+node_count: 19
+algorithms:
+  - name: Destiny
+    max_failures: 9
+    key_file: "keys/bls_10_19.txt"
+  - name: SBFTx
+    max_failures: 6
+    key_file: "keys/tss_19_19.txt"
+request_counts: 
+- inflight_request_counts: [1]
+  client_counts: [10, 30]
+- inflight_request_counts: [5]
+  client_counts: [10, 20, 30, 40]
+- inflight_request_counts: [10]
+  client_counts: [10, 20, 30, 40]
+client_batch_counts: [200]
+payload_size: 500
+datapoint_time: 1m40s
+scale_datapoint_time: 1m30s

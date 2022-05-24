@@ -22,9 +22,6 @@ spec:
             - "exec /bin/peer"
           ports:
             - containerPort: 7000
-          # volumeMounts:
-          #   - mountPath: /dev/sgx
-          #     name: dev-sgx
           securityContext:
             privileged: true
           env:
@@ -44,18 +41,13 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
-      # volumes:
-      #   - name: dev-sgx
-      #     hostPath:
-      #       path: /dev/sgx
-      #       type: Directory
       # No pre-stop hook is required, a SIGTERM plus some time is all that's
       # needed for graceful shutdown of a node.
       terminationGracePeriodSeconds: 1
       hostAliases:
         - ip: "40.71.207.117"
           hostnames:
-            - "ssrg"
+            - "master-ip"
 ---
 apiVersion: apps/v1
 kind: ReplicaSet

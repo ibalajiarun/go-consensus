@@ -22,7 +22,7 @@ import (
 
 var (
 	help   = flag.Bool("help", false, "")
-	maddr  = flag.StringP("master", "m", "ssrg:5060", "address of the master node to bootstrap with")
+	maddr  = flag.StringP("master", "m", "master-ip:5060", "address of the master node to bootstrap with")
 	msleep = flag.DurationP("msleep", "s", 0, "Time (in s) to wait before connecting to master")
 )
 
